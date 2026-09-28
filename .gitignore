@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Testing & Linting
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Databases & Runtime Data (Privacy by Design - telemetry stays local)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/*.db
+data/*.sqlite*
+
+# ML Models (auto-downloaded via scripts/download_models.py)
+models/*.task
+
+# Media & Temporary files
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.avi
+!docs/assets/*.png
+
+# Video recordings
+video_gitignore/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS files
+Thumbs.db
+.DS_Store

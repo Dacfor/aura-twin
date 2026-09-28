@@ -1,0 +1,16 @@
+{
+  "sample_size": 36,
+  "r_perclos_vs_pvt_lapses": 0.9078,
+  "r_perclos_vs_kss": 0.9267,
+  "r_perclos_vs_mean_rt": 0.9591,
+  "target_threshold_met": true,
+  "accuracy": 0.8889,
+  "sensitivity_recall": 0.9545,
+  "specificity": 0.7857,
+  "confusion_matrix": {
+    "true_positive": 21,
+    "false_positive": 3,
+    "true_negative": 11,
+    "false_negative": 1
+  }
+}

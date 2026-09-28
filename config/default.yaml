@@ -1,0 +1,111 @@
+# ==============================================================================
+# AURA-Face Configuration - ASI Space Hackathon (BEX2026 Challenge #3)
+# Edge Optical Sensor for Lunar Astronaut Multimodal Digital Twin
+# ==============================================================================
+
+# Telemetry and Session Settings
+session:
+  subject_id: "default_astronaut"
+  telemetry_rate_hz: 1.0
+  db_path: "data/aura_face_telemetry.db"
+  enable_wal: true
+
+# Head Pose and Tracking Gating
+gating:
+  max_yaw_deg: 25.0         # Frame excluded from ocular/affective if |yaw| > 25°
+  max_pitch_deg: 20.0       # Frame excluded if |pitch| > 20°
+  min_tracking_quality: 0.6 # Minimum face detection confidence
+  unknown_timeout_s: 10.0   # Trigger UNKNOWN state if tracking < min_tracking_quality for >=10s
+  unknown_recovery_s: 10.0  # Recovery from UNKNOWN after 10s of stable tracking
+
+# Ocular Module Settings (NASA Dinges & Metaxas, Wierwille 1994)
+ocular:
+  ema_alpha: 0.6            # Smoothing parameter for bilateral EAR
+  blink_min_ms: 100.0       # Normal blink lower bound (100 ms)
+  blink_max_ms: 400.0       # Normal blink upper bound (400 ms)
+  droop_min_ms: 400.0       # Slow eyelid droop start (counts for PERCLOS)
+  droop_max_ms: 500.0       # Slow eyelid droop threshold
+  microsleep_min_ms: 500.0  # Eyelid closure > 500 ms classified as microsleep
+  perclos_window_s: 60.0    # Rolling window for PERCLOS (% time slow closures)
+  metrics_window_s: 300.0   # 5-minute rolling window for blink rate & median duration
+  thresholds:
+    perclos_alert_max: 8.0      # PERCLOS < 8% -> ALERT
+    perclos_moderate_max: 15.0  # 8% <= PERCLOS < 15% -> MODERATE
+    microsleep_critical_count: 2 # >= 2 microsleeps in 5 min -> CRITICAL
+
+# Affective & FACS Action Units Settings (Ekman, EMFACS-lite)
+affective:
+  # Base Action Unit thresholds (applied to normalized AUs: (raw - baseline) / (1 - baseline))
+  au4_threshold: 0.40       # Brow Lowerer (Mental effort / Frustration)
+  au6_threshold: 0.30       # Cheek Raiser (Duchenne smile component)
+  au12_threshold: 0.35      # Lip Corner Puller (Positive valence)
+  au1_threshold: 0.35       # Inner Brow Raiser (Sadness / Surprise component)
+  au9_threshold: 0.35       # Nose Wrinkler (Disgust)
+  au15_threshold: 0.35      # Lip Corner Depressor (Sadness)
+  brow_outer_up_threshold: 0.35  # Surprise component
+  jaw_open_threshold: 0.40  # Surprise component
+  
+  # Smile & Duchenne Pattern Persistence Settings
+  smile:
+    au12_smile_threshold: 0.30
+    au6_duchenne_threshold: 0.30
+    smile_min_duration_s: 0.8
+    duchenne_min_duration_s: 1.2
+    smoothing_window_s: 1.5
+
+  # Cognitive Strain Onset & Offset Timers (Hysteresis)
+  cognitive_strain:
+    enter_workload: 0.60
+    enter_duration_s: 5.0
+    exit_workload: 0.40
+    exit_duration_s: 30.0
+
+  # Psychophysiological Behavioral Patterns
+  cognitive_load:
+    au4_min: 0.30           # AU4 > 0.30 sustained
+    au12_max: 0.20          # Without positive smile
+    duration_s: 3.0         # Sustained for > 3.0 seconds -> COGNITIVE_LOAD_ONSET
+  
+  yawn:
+    jaw_open_min: 0.50      # Jaw open > 0.50
+    au12_max: 0.25          # Without smile
+    duration_s: 2.0         # Sustained for > 2.0 seconds -> YAWN
+  
+  pre_rest:
+    au4_min: 0.30
+    duration_s: 180.0       # Sustained > 3 minutes (180 s) with negative valence
+    exit_absence_s: 300.0   # Exits PRE_REST after 5 minutes of pattern absence
+
+# Calibration Protocol Settings
+calibration:
+  open_eye_duration_s: 10.0   # Baseline relaxed open eye collection
+  blink_duration_s: 10.0      # Eyelid closed level collection
+  ear_threshold_factor: 0.7   # threshold = open - 0.7 * (open - closed)
+  default_ear_open: 0.30
+  default_ear_closed: 0.15
+  default_ear_threshold: 0.20
+
+# Finite State Machine Hysteresis Settings
+states:
+  moderate_trigger_delay_s: 10.0  # Must sustain moderate conditions for >=10s
+  critical_trigger_delay_s: 0.0   # Immediate entry into critical on severe fatigue
+  recovery_dwell_s: 30.0          # Must remain below threshold for 30s to de-escalate
+
+# Computer Vision & Models (Pluggable: mediapipe edge vs pyfeat cuda)
+vision:
+  model_path: "models/face_landmarker.task"
+  camera_id: 0
+  frame_width: 1280
+  frame_height: 720
+  target_fps: 30
+  backend: "mediapipe"        # "mediapipe" (Flight Edge) | "pyfeat" (Workstation CUDA)
+  device: "cpu"               # "cpu" | "cuda"
+
+# Head-Up Display (HUD) Marker Layers
+markers:
+  default_marker_mode: "MINIMAL"  # "OFF" | "MINIMAL" | "DETAILED" | "ALL"
+  show_eye_contours: true
+  show_face_brackets: true
+  show_head_pose_axis: false
+  show_debug_labels: false
+
