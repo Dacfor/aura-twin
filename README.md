@@ -3,6 +3,9 @@
 > **ASI Space Hackathon (BEX2026 Challenge #3 — Artemis Community)**  
 > *Optical Computer Recognition of Stress, Affect and Fatigue during Performance in Spaceflight*
 
+> [!NOTE]
+> 🏆 **Winner — Best Solution for Value Proposition & Impact** at the ASI Space Hackathon BEX2026.
+
 > [!IMPORTANT]
 > **Ethical & Scientific Foundation (Barrett et al., 2019):**  
 > *AURA-Face measures observable facial and ocular behavior and derives explainable operational proxies for vigilance, fatigue, cognitive strain and positive engagement. It does not diagnose psychological conditions or infer internal emotions with certainty.*
@@ -14,7 +17,7 @@
 
 ---
 
-## 0. Quickstart (30 Seconds)
+## Quickstart
 
 ```bash
 # 1. Install dependencies
@@ -23,120 +26,181 @@ pip install -e .
 # 2. Download MediaPipe Face Landmarker model (3.7 MB)
 python scripts/download_models.py
 
-# 3. Launch live cockpit with guided individual calibration (Edge Flight Default)
+# 3. Launch live cockpit with guided individual calibration
 python -m aura_face.cli run --camera 0
 
-# 4. Optional: Launch workstation research backend with NVIDIA CUDA (RTX 4060)
-python -m aura_face.cli run --camera 0 --backend pyfeat --device cuda
-
-# 5. Launch the synthetic astronaut simulator (offline presentation)
+# 4. Launch the simulator with cardiovascular digital twin
 python -m aura_face.cli run --sim --profile fatigue
+
+# 5. Optional: Research backend with NVIDIA CUDA
+python -m aura_face.cli run --camera 0 --backend pyfeat --device cuda
 ```
 
-### Live Cockpit Interactive Controls
+### Cockpit Controls
 
 | Hotkey | Action | Description |
 |:---:|:---|:---|
-| **`M`** | **Cycle Marker Mode** | Switches between `OFF` (clean video), `MINIMAL` (unobstructed face default), `DETAILED`, and `ALL`. |
-| **`O`** | **Toggle Eye Contours** | Toggles color-coded ocular contours (Cyan = Open, Yellow = Near Threshold, Red = Prolonged Closure). |
-| **`B`** | **Toggle Face Brackets** | Toggles subtle corner brackets tracking the face bounding region. |
-| **`H`** | **Toggle Head Pose** | Toggles 3D projected orientation axes (X=Red, Y=Green, Z=Blue via solvePnP). |
-| **`D`** | **Toggle Debug Labels** | Toggles raw Action Unit and EAR floating numeric labels. |
-| **`Q` / `ESC`** | **Mission Shutdown** | Gracefully concludes monitoring session, runs SQLite debrief, and exports timeline chart. |
+| **`M`** | Cycle Marker Mode | `OFF` → `MINIMAL` → `DETAILED` → `ALL` |
+| **`O`** | Toggle Eye Contours | Color-coded ocular contours (Cyan / Yellow / Red) |
+| **`B`** | Toggle Face Brackets | Subtle corner brackets tracking the face region |
+| **`H`** | Toggle Head Pose | 3D orientation axes (X=Red, Y=Green, Z=Blue) |
+| **`D`** | Toggle Debug Labels | Raw Action Unit and EAR numeric labels |
+| **`Q`** / **`ESC`** | Shutdown | Debrief, SQLite export, and timeline chart |
 
 ---
 
-## 1. What AURA-Face Is & What It Is NOT
+## Architecture
+
+AURA-Face is a dual-domain system with two independent, non-causal pipelines running in parallel:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        AURA-Face Cockpit HUD                       │
+│                                                                     │
+│  ┌──────────────────────────────┐  ┌──────────────────────────────┐ │
+│  │  AFFECTIVE / OCULAR DOMAIN  │  │  CARDIOVASCULAR DOMAIN       │ │
+│  │  (Cards 1–4)                │  │  (Card 5)                    │ │
+│  │                              │  │                              │ │
+│  │  Camera → MediaPipe →        │  │  CSV Trajectory →            │ │
+│  │  EAR/PERCLOS/AU → FSM →     │  │  LBNP Simulation →           │ │
+│  │  Behavioral Proxies →        │  │  Blood Volume Graph →        │ │
+│  │  1 Hz SQLite Telemetry       │  │  Animated Suction Arrows     │ │
+│  └──────────────────────────────┘  └──────────────────────────────┘ │
+│                                                                     │
+│  Design Invariant: NO causal link between the two domains.          │
+│  The cardiovascular twin is a proof-of-concept visualization.       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Repository Structure
+
+```
+aura-face/
+├── config/default.yaml          # All thresholds and parameters
+├── models/                      # MediaPipe model (auto-downloaded)
+├── data/
+│   ├── cardiovascular_demo.csv  # Default cardiovascular trajectory
+│   └── cardiovascular_demo_C.csv# Astronaut C personalized trajectory
+├── src/aura_face/
+│   ├── backends.py              # Pluggable backends (MediaPipe + Py-Feat)
+│   ├── capture.py               # Video capture & head pose estimation
+│   ├── ocular.py                # EAR, blink, PERCLOS engine
+│   ├── affective.py             # AU normalization & behavioral proxies
+│   ├── cardiovascular.py        # Cardiovascular digital twin (Card 5)
+│   ├── calibration.py           # Individual baseline calibration (<25s)
+│   ├── states.py                # FSM with hysteresis
+│   ├── storage.py               # SQLite WAL 1 Hz telemetry writer
+│   ├── overlay.py               # Cockpit HUD renderer
+│   ├── simulator.py             # Synthetic astronaut generator
+│   ├── config.py                # Configuration dataclasses
+│   └── cli.py                   # CLI with hotkeys & backend selection
+├── scripts/
+│   ├── download_models.py       # Model auto-download
+│   ├── session_timeline.py      # Post-session timeline generator
+│   └── validate_protocol.py     # PVT-B validation & correlation
+├── tests/                       # Pytest suite (privacy, cardiovascular, etc.)
+├── docs/                        # Science, privacy, validation, references
+├── CONTRIBUTING.md              # Contribution guide
+└── CHANGELOG.md                 # Version history
+```
+
+---
+
+## What AURA-Face Is & What It Is NOT
 
 | What AURA-Face **IS** | What AURA-Face **IS NOT** |
 | :--- | :--- |
 | **Objective Facial Behavior Sensor**: Measures Action Units (FACS) and ocular dynamics validated by NASA (Dinges & Metaxas, NSBRI). | **NOT an Emotion Lie-Detector**: Does NOT claim universal emotion mapping (Barrett et al., 2019). Claims are strictly behavioral. |
-| **Explainable Behavioral Proxies**: Incurs continuous, normalized proxies with transparent evidence logs (`evidence_json`) and confidence scores. | **NOT a Black-Box Classifier**: Every inferred pattern is justified by explicit temporal and morphological evidence. |
-| **Temporal Persistence & Hysteresis**: Rejects transient artifacts ($\ge 0.8$s for smile, $\ge 1.2$s for Duchenne, $\ge 5$s for strain candidate). | **NOT a Single-Frame Speculation Engine**: Single-frame twitches or speech movements do not flip states. |
-| **Edge-Native & Zero-Frame**: Processes frames in volatile RAM; zero images saved to disk or network (NASA/ESA crew privacy compliance). | **NOT a Cloud or Surveillance Tool**: No remote frame streaming or facial recognition biometrics. |
-| **Individually Calibrated**: Baseline EAR and resting AU levels learned in <25 seconds for each astronaut. | **NOT a Static One-Size-Fits-All Threshold**: Accounts for individual morphology and resting facial asymmetry. |
-| **1 Hz Telemetry Provider**: Output stream designed to feed the crew Multimodal Digital Twin (HRV, sleep, biodynamic lighting). | **NOT an Actuator**: It does not make command decisions; it supplies objective telemetry for mission control and the habitat digital twin. |
-
-
----
-
-## 2. Spaceflight Mission Context (BEX2026 Challenge #3)
-
-During Artemis lunar surface operations, astronauts face:
-- Total confinement in extreme habitats.
-- Lunar day/night cycles lasting 14 Earth days, disrupting circadian rhythms.
-- High cognitive workload during extravehicular activities (EVA) and system anomalies.
-
-AURA-Face provides non-invasive, contactless psychological and vigilance monitoring directly at the habitat workstation.
-
-### Earth-Space Two-Way Spin-Off
-- **Space for Earth**: Telemetry algorithms transfer directly to hospital ICU night-shift medical staff, high-speed rail operators, air traffic control towers, and Antarctic research stations.
-- **Earth for Space**: Integrates terrestrial psychomotor vigilance testing (PVT-B) and Karolinska Sleepiness Scale (KSS) calibration into deep space operations.
+| **Explainable Behavioral Proxies**: Continuous, normalized proxies with transparent evidence logs and confidence scores. | **NOT a Black-Box Classifier**: Every inferred pattern is justified by explicit temporal and morphological evidence. |
+| **Temporal Persistence & Hysteresis**: Rejects transient artifacts (≥0.8s for smile, ≥1.2s for Duchenne, ≥5s for strain). | **NOT a Single-Frame Speculation Engine**: Single-frame twitches or speech movements do not flip states. |
+| **Edge-Native & Zero-Frame**: Processes frames in volatile RAM; zero images saved to disk or network. | **NOT a Cloud or Surveillance Tool**: No remote frame streaming or facial recognition biometrics. |
+| **Individually Calibrated**: Baseline EAR and resting AU levels learned in <25 seconds per astronaut. | **NOT a Static One-Size-Fits-All Threshold**: Accounts for individual morphology and resting facial asymmetry. |
+| **1 Hz Telemetry Provider**: Output stream feeds the crew Multimodal Digital Twin. | **NOT an Actuator**: Supplies objective telemetry; does not make command decisions. |
 
 ---
 
-## 3. Repository Architecture
+## Privacy: Zero-Frame Retention
 
-```
-aura-face/
-├── config/default.yaml        # All thresholds (EAR, PERCLOS, AU, FSM hysteresis, marker layers)
-├── models/face_landmarker.task # MediaPipe 478-landmark + 52 blendshape model
-├── src/aura_face/
-│   ├── backends.py            # Pluggable backends (MediaPipe Edge CPU + Py-Feat CUDA)
-│   ├── capture.py             # Video capture, head pose estimation & gating
-│   ├── ocular.py              # Bilateral EAR, EMA smoothing, blink/droop/PERCLOS
-│   ├── affective.py           # AU baseline normalization, behavioral proxies & XAI
-│   ├── calibration.py         # Guided <25s astronaut baseline calibration
-│   ├── states.py              # FSM with hysteresis (ALERT, MODERATE, CRITICAL, PRE_REST)
-│   ├── storage.py             # SQLite WAL 1 Hz telemetry and discrete events
-│   ├── overlay.py             # Artemis lunar cockpit HUD visualizer & 2D affect map
-│   ├── simulator.py           # Synthetic astronaut telemetry generator
-│   └── cli.py                 # Unified CLI commands with hotkeys & backends
-├── scripts/
-│   ├── download_models.py     # Automated model download
-│   ├── session_timeline.py    # Post-session multi-track timeline generator
-│   └── validate_protocol.py   # PVT-B validation and correlation analysis
-├── tests/                     # Pytest suite with synthetic landmarks & privacy checks
-└── docs/                      # Scientific foundations, validation & privacy dossiers
-```
+AURA-Face implements **Privacy by Design** at the architectural level:
+
+- **No raw frames** are ever saved to disk, database, or network.
+- All stored data is purely **numerical telemetry** at 1 Hz (floats, integers, timestamps).
+- The SQLite database contains **zero images, zero video, zero biometric identifiers**.
+- Full compliance with NASA/ESA crew privacy standards.
+
+See [docs/PRIVACY.md](docs/PRIVACY.md) for the complete privacy architecture.
 
 ---
 
-## 4. Live Pitch Demonstration Script (5 Minutes)
+## Cardiovascular Digital Twin (Card 5)
 
-Designed for the ASI BEX2026 Jury Presentation:
+Card 5 provides a **proof-of-concept visualization** of a personalized Lower Body Negative Pressure (LBNP) countermeasure simulation:
 
-| Time | Stage | Action & Key Pitch Phrase |
-|---|---|---|
-| **0:00–0:45** | **Guided Calibration** | Launch `python -m aura_face.cli run --camera 0`. Sit in front of camera: *"The system learns MY unique resting eye aperture and facial resting tone in 20 seconds. No static universal threshold."* |
-| **0:45–2:00** | **Vigilance & Drowsiness** | Natural gaze (`ALERT`). Close eyes for ~15-20s: PERCLOS bar climbs, state shifts to `MODERATE`. Prolonged slow droop (>500ms): `CRITICAL` alert activates with pulsing border and microsleep counter increment. *"PERCLOS: the gold standard psychophysiological fatigue metric validated by NASA."* |
-| **2:00–3:00** | **Cognitive Stress & Affect** | Furrow brow while solving mental arithmetic (e.g., $47 \times 38$): AU4 rises > 0.30, HUD shows `COGNITIVE_LOAD_ONSET`. Smile upon completion: `HAPPINESS [DUCHENNE]` component triggers with AU6 cheek raise. |
-| **3:00–4:00** | **Winning Privacy Argument** | Press `q`, open SQLite database `data/aura_face_telemetry.db` live: *"This is EVERYTHING stored: purely numeric floating point vectors at 1 Hz. Zero frames, zero images, zero biometric surveillance. Full compliance with NASA/ESA crew privacy standards."* Show multi-track timeline plot: `python scripts/session_timeline.py`. |
-| **4:00–5:00** | **Digital Twin Integration & Spin-Off** | Show how the 1 Hz SQLite telemetry stream integrates directly into the Lunar Habitat Twin (modulating biodynamic circadian lighting) and transfers to terrestrial ICU shift workers and transport controllers. |
+- Replays precomputed cardiovascular trajectories from a lumped-parameter 0D model.
+- Displays real-time animated blood volume graph with LBNP phase indicators.
+- Shows suction arrow animations synchronized to the LBNP protocol phases.
+- Uses **Astronaut C** personalized trajectory with a 940 mL target baseline.
+
+> This module runs in **parallel** with the facial analysis and is **not causally linked** to the behavioral outputs. It demonstrates the concept of a multimodal astronaut digital twin where multiple physiological domains are monitored simultaneously.
 
 ---
 
-## 5. Experimental Validation (BEX2026 Requirement #4)
+## Experimental Validation
 
-Run the automated scientific cross-validation benchmark:
 ```bash
 python scripts/validate_protocol.py
 ```
 
-### Empirical Results (N=12 Analog Cohort):
-- **Pearson Correlation $r(\text{PERCLOS}, \text{PVT-B Lapses})$**: **0.9078** (Target $r > 0.85$ achieved).
-- **Pearson Correlation $r(\text{PERCLOS}, \text{Karolinska KSS})$**: **0.9267**.
-- **Overall Diagnostic Accuracy**: **88.9%**.
-- **Fatigue Sensitivity (Recall)**: **95.5%**.
-- Detailed report exported to `docs/validation_report.json`.
+### Results (N=12 Analog Cohort):
+- **Pearson Correlation r(PERCLOS, PVT-B Lapses)**: **0.9078** (Target r > 0.85 ✅)
+- **Pearson Correlation r(PERCLOS, Karolinska KSS)**: **0.9267**
+- **Overall Diagnostic Accuracy**: **88.9%**
+- **Fatigue Sensitivity (Recall)**: **95.5%**
+
+See [docs/VALIDATION.md](docs/VALIDATION.md) for protocol details.
 
 ---
 
-## 6. Scientific References
+## Spaceflight Mission Context
+
+During Artemis lunar surface operations, astronauts face total confinement in extreme habitats, lunar day/night cycles lasting 14 Earth days (disrupting circadian rhythms), and high cognitive workload during EVAs and system anomalies.
+
+AURA-Face provides **non-invasive, contactless** psychological and vigilance monitoring directly at the habitat workstation.
+
+### Earth-Space Two-Way Spin-Off
+- **Space → Earth**: Telemetry algorithms transfer to hospital ICU night-shift staff, high-speed rail operators, air traffic control, and Antarctic research stations.
+- **Earth → Space**: Integrates terrestrial PVT-B and Karolinska Sleepiness Scale calibration into deep space operations.
+
+---
+
+## Documentation
+
+| Document | Description |
+|:---|:---|
+| [SCIENCE.md](docs/SCIENCE.md) | Scientific foundations and methodology |
+| [PRIVACY.md](docs/PRIVACY.md) | Zero-frame retention architecture |
+| [VALIDATION.md](docs/VALIDATION.md) | Experimental validation protocol |
+| [DATABASE_GUIDE.md](docs/DATABASE_GUIDE.md) | SQLite telemetry schema guide |
+| [REFERENCES.md](docs/REFERENCES.md) | Full scientific citations with links |
+| [ARCHITECTURE_AND_PITCH_GUIDE.md](docs/ARCHITECTURE_AND_PITCH_GUIDE.md) | Technical architecture deep-dive |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+
+---
+
+## Scientific References
 
 1. **Dinges, D. F. & Metaxas, D. et al. (2008–2012)** — *Optical Computer Recognition of Stress, Affect and Fatigue during Performance in Spaceflight*, NSBRI/NASA Taskbook.
 2. **Wierwille, W. W. et al. (1994)** — Canonical definition of PERCLOS: % time slow eyelid closures on 1-min window.
 3. **Dinges, D. F. & Grace, R. (1998)** — *PERCLOS: A Valid Psychophysiological Measure of Alertness*.
 4. **Ekman, P. & Friesen, W. V. (1978)** — *Facial Action Coding System (FACS)*.
 5. **Barrett, L. F. et al. (2019)** — *Emotional Expressions Reconsidered*.
+6. **Heldt, T. et al. (2004)** — *Computational Model of Cardiovascular Response to Orthostatic Stress*.
 
+Full citations with links: [docs/REFERENCES.md](docs/REFERENCES.md)
+
+---
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2026 AURA Team — ASI Space Hackathon (BEX2026)
