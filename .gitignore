@@ -48,8 +48,9 @@ models/*.task
 *.jpg
 *.jpeg
 *.mp4
-*.avi
 !docs/assets/*.png
+!docs/assets/*.mp4
+!docs/assets/*.gif
 
 # Video recordings
 video_gitignore/
@@ -59,6 +60,9 @@ video_gitignore/
 .idea/
 *.swp
 *~
+
+# Local documentation & logs
+storico.md
 
 # OS files
 Thumbs.db

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-10-01
+
+### Added
+- **Interactive System Architecture & FSM Diagrams**: Native Mermaid flowcharts embedded in `README.md` visualizing the edge video pipeline, pluggable vision backends, dual-domain processing, zero-frame retention boundaries, and state hysteresis transitions.
+- **Executive Value Proposition & Impact Dossier**: Comprehensive pitch section highlighting mission-critical benefits, 5 pillars of the AURA edge, quantifiable ROI (95.5% recall, r=0.9078 PVT-B correlation), $4.8B dual-use terrestrial markets, and TRL 4 to 6 maturation roadmap.
+- **Synthetic Cockpit Video & Animated HUD Demo**:
+  - `docs/assets/aura_cockpit_demo.mp4` — High-definition 8-second synthetic mission demonstration.
+  - `docs/assets/aura_cockpit_demo.gif` — Lightweight animated preview embedded in `README.md`.
+  - `docs/assets/cockpit_overview.png` & `docs/assets/cardiovascular_twin_card5.png` — Full-resolution HUD snapshots.
+- `scripts/generate_demo_assets.py` — Automated script to generate synthetic demo video and GIF assets headlessly.
+
+---
+
 ## [1.0.0] — 2026-09-28
 
 ### Added
