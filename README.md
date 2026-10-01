@@ -12,6 +12,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
+[![CI](https://github.com/Dacfor/aura-twin/actions/workflows/ci.yml/badge.svg)](https://github.com/Dacfor/aura-twin/actions)
 [![Privacy: Zero-Frame](https://img.shields.io/badge/Privacy-Zero--Frame%20Retention-green.svg)](docs/PRIVACY.md)
 [![Standard: NASA NSBRI](https://img.shields.io/badge/Science-NASA%20Dinges%20%26%20Metaxas-orange.svg)](docs/SCIENCE.md)
 [![Award: ASI Space Hackathon](https://img.shields.io/badge/Award-Best%20Value%20Proposition%20%26%20Impact-gold.svg)](#value-proposition--mission-impact)
